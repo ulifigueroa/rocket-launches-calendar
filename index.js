@@ -1,13 +1,14 @@
 // ########################################################################
 // Load app when document is ready
 // ########################################################################
-document.onreadystatechange = () => {
-    const app = new App({ container: 'app' });
+let CalendarApp = null;
 
+document.onreadystatechange = () => {
     switch (document.readyState) {
         case 'interactive':
             try {
-                app.init();
+                CalendarApp = new App({ container: 'app' });
+                CalendarApp.init();
             } catch (err) {
                 console.error(err);
             }
@@ -46,33 +47,48 @@ Component.prototype.getHTML = function () {
 // App Component
 // ########################################################################
 const App = function App({ container }) {
-    this.container = document.getElementById(container);
+    const today = new Date();
 
     this.attributes = {
+        today,
         loading: true,
-        today: new Date(),
-        view: 'month',
-        start: '2017-11-01',
-        end: '2017-11-30',
-        events: []
+        events: [],
+        start: new Date(today.getFullYear(), today.getMonth(), 1)
     };
 
     this.init = () => {
+        this.container = document.getElementById(container);
         this.calendar = new Calendar(this.attributes);
-        this.renderCalendar(this.attributes.start, this.attributes.end);
+        this.renderCalendar(this.attributes.start);
     }
 
-    this.renderCalendar = (startDate, endDate) => {
+    this.getNextMonthEvents = () => {
+        const { start } = this.attributes;
+        const newStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+        this.renderCalendar(newStart);
+    };
+
+    this.getPreviousMonthEvents = () => {
+        const { start } = this.attributes;
+        const newStart = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+        this.renderCalendar(newStart);
+    };
+
+    this.renderCalendar = (startDate) => {
         this.setAttributes({ loading: true });
        
-        return this.getLaunchEvents(startDate, endDate).then((events) => {
-            this.calendar.setAttributes({ events });
-            this.setAttributes({ events, loading: false });
+        return this.getEvents(startDate).then((events) => {
+            this.calendar.setAttributes({ start: startDate, events });
+            this.setAttributes({ events, start: startDate, loading: false });
         }).catch((err) => { throw err; });
     }
     
-    this.getLaunchEvents = (startDate, endDate) => {
-        const request = new Request(`https://launchlibrary.net/1.2/launch/${startDate}/${endDate}`);
+    this.getEvents = (startDate) => {
+        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+        const startDateParameter = startDate.toISOString().substr(0, 10);
+        const endDateParameter = endDate.toISOString().substr(0, 10);
+
+        const request = new Request(`https://launchlibrary.net/1.2/launch/${startDateParameter}/${endDateParameter}`);
 
         return fetch(request).then((response) => {
             return new Promise((resolve, reject) => {
@@ -130,13 +146,11 @@ const Calendar = function Calendar(attributes) {
     this.attributes = {
         today: null,
         start: null,
-        end: null,
         events: []
     }
     
     this.attributes.today = attributes.today;
     this.attributes.start = attributes.start;
-    this.attributes.end = attributes.end;    
 
     this.renderTitle = function() {
         let html = '';
@@ -148,26 +162,34 @@ const Calendar = function Calendar(attributes) {
         return html;
     };
 
+    this.isToday = (date) => {
+        const { today } = this.attributes;
+
+        return date.getFullYear() === today.getFullYear() &&
+            date.getMonth() === today.getMonth() &&
+            date.getDate() === today.getDate();
+    }
+
     this.renderEvents = function () {
-        const { events, today } = this.attributes;
-        const currentMonth = today.getMonth();
-        const firstDayOfMonth = new Date(today.getFullYear(), currentMonth, 1);
-        const firstWeekDayOfMonth = firstDayOfMonth.getDay();
-        const lastDayOfMonth = new Date(today.getFullYear(), currentMonth + 1, 0).getDate();
-        let currentDay = 0;
+        const { events, today, start } = this.attributes;
+        const firstDayOfMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+        const lastDayOfMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+        let currentDayNumber = 0;
         let html = '';
 
         [0, 1, 2, 3, 4].forEach((week) => {
             html += '<tr>';
             [0, 1, 2, 3, 4, 5, 6].forEach((weekDay) => {
-                html += `<td class="day ${today.getDate() === currentDay + 1 ? 'today' : ''}">`;
+                let currentDate = new Date(start.getFullYear(), start.getMonth(), currentDayNumber + 1);
 
-                if (week === 0 && weekDay >= firstWeekDayOfMonth ||
-                    week > 0 && currentDay <= lastDayOfMonth) {
-                    html += `<span class="number ">${++currentDay}</span>`;
+                html += `<td class="day ${this.isToday(currentDate) ? 'today' : ''}">`;
 
-                    if (events[currentDay]) {                        
-                        events[currentDay].forEach((event) => {
+                if (week === 0 && weekDay >= firstDayOfMonth.getDay() ||
+                    week > 0 && currentDayNumber <= lastDayOfMonth) {
+                    html += `<span class="number ">${++currentDayNumber}</span>`;
+
+                    if (events[currentDayNumber]) {                        
+                        events[currentDayNumber].forEach((event) => {
                             html += `<span class="event" title="${event.title}">${event.title}</span>`;
                         });
                     }
@@ -187,9 +209,17 @@ Calendar.prototype = Object.create(Component.prototype);
 
 Calendar.prototype.render = function() {
     console.log('Calendar.render');
-    const currentMonth = this.attributes.today.getMonth();
+    const month = this.attributes.start.getMonth();
+    const year = this.attributes.start.getFullYear();
 
-    this.html = `<h1>${this.months[currentMonth]}</h1>`;
+    this.html = '';
+    this.html += '<header>';
+    this.html += `<h1>${this.months[month]}, ${year}</h1>`;
+    this.html += '<section class="controls">';
+    this.html += '<button onClick="CalendarApp.getPreviousMonthEvents()">Previous</button>';
+    this.html += '<button onClick="CalendarApp.getNextMonthEvents()">Next</button>';
+    this.html += '</header>';
+
     this.html += '<table class="calendar">';
     this.html += `<thead>${this.renderTitle()}</thead>`;
     this.html += `<tbody>${this.renderEvents()}</tbody>`;
