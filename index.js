@@ -47,44 +47,53 @@ Component.prototype.getHTML = function () {
 // App Component
 // ########################################################################
 const App = function App({ container }) {
-    const today = new Date();
-
     this.attributes = {
-        today,
+        today: null,
         loading: true,
         events: [],
-        start: new Date(today.getFullYear(), today.getMonth(), 1)
+        start: null
     };
 
     this.init = () => {
+        this.attributes.today = new Date();
+        this.attributes.start = new Date(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)
+        
         this.container = document.getElementById(container);
-        this.calendar = new Calendar(this.attributes);
+        this.calendar = new Calendar();
+        
         this.renderCalendar(this.attributes.start);
+    }
+
+    this.getCurrentMonthEvents = () => {
+        const { today } = this.attributes;
+        const newStart = new Date(today.getUTCFullYear(), today.getUTCMonth(), 1);
+        this.renderCalendar(newStart);
     }
 
     this.getNextMonthEvents = () => {
         const { start } = this.attributes;
-        const newStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+        const newStart = new Date(start.getUTCFullYear(), start.getUTCMonth() + 1, 1);
         this.renderCalendar(newStart);
     };
 
     this.getPreviousMonthEvents = () => {
         const { start } = this.attributes;
-        const newStart = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+        const newStart = new Date(start.getUTCFullYear(), start.getUTCMonth() - 1, 1);
         this.renderCalendar(newStart);
     };
 
     this.renderCalendar = (startDate) => {
+        const { today } = this.attributes;
         this.setAttributes({ loading: true });
        
         return this.getEvents(startDate).then((events) => {
-            this.calendar.setAttributes({ start: startDate, events });
+            this.calendar.setAttributes({ today, events, start: startDate });
             this.setAttributes({ events, start: startDate, loading: false });
         }).catch((err) => { throw err; });
     }
     
     this.getEvents = (startDate) => {
-        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+        const endDate = new Date(startDate.getUTCFullYear(), startDate.getUTCMonth() + 1, 0);
         const startDateParameter = startDate.toISOString().substr(0, 10);
         const endDateParameter = endDate.toISOString().substr(0, 10);
 
@@ -114,7 +123,7 @@ const App = function App({ container }) {
                 start: new Date(launch.windowstart),
                 end: new Date(launch.windowend)
             };
-            const eventDay = event.start.getDate();
+            const eventDay = event.start.getUTCDate();
 
             hashedEvents[eventDay] = hashedEvents[eventDay] || [];
             hashedEvents[eventDay].push(event); 
@@ -137,7 +146,7 @@ App.prototype.render = function() {
 // ########################################################################
 // Calendar Component
 // ########################################################################
-const Calendar = function Calendar(attributes) {
+const Calendar = function Calendar() {
     this.html = '';
     this.days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     this.months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
@@ -148,9 +157,6 @@ const Calendar = function Calendar(attributes) {
         start: null,
         events: []
     }
-    
-    this.attributes.today = attributes.today;
-    this.attributes.start = attributes.start;
 
     this.renderTitle = function() {
         let html = '';
@@ -165,15 +171,15 @@ const Calendar = function Calendar(attributes) {
     this.isToday = (date) => {
         const { today } = this.attributes;
 
-        return date.getFullYear() === today.getFullYear() &&
-            date.getMonth() === today.getMonth() &&
-            date.getDate() === today.getDate();
+        return date.getUTCFullYear() === today.getUTCFullYear() &&
+            date.getUTCMonth() === today.getUTCMonth() &&
+            date.getUTCDate() === today.getUTCDate();
     }
 
     this.renderEvents = function () {
         const { events, today, start } = this.attributes;
-        const firstDayOfMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-        const lastDayOfMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+        const firstDayOfMonth = new Date(start.getUTCFullYear(), start.getUTCMonth(), 1);
+        const lastDayOfMonth = new Date(start.getUTCFullYear(), start.getUTCMonth() + 1, 0).getUTCDate();
         
         let currentDayNumber = 0;
         let html = '';
@@ -181,16 +187,16 @@ const Calendar = function Calendar(attributes) {
         [0, 1, 2, 3, 4].forEach((week) => {
             html += '<tr>';
             [0, 1, 2, 3, 4, 5, 6].forEach((weekDay) => {
-                let currentDate = new Date(start.getFullYear(), start.getMonth(), currentDayNumber + 1);
+                let currentDate = new Date(start.getUTCFullYear(), start.getUTCMonth(), currentDayNumber + 1);
 
                 html += `<td class="day ${this.isToday(currentDate) ? 'today' : ''}">`;
 
-                if (week === 0 && weekDay >= firstDayOfMonth.getDay() ||
+                if (week === 0 && weekDay >= firstDayOfMonth.getUTCDay() ||
                     week > 0 && currentDayNumber < lastDayOfMonth) {
                     html += '<span class="number ">';
                     
                     if (currentDayNumber === 0) {
-                        html += `${this.months[start.getMonth()]} `;
+                        html += `${this.months[start.getUTCMonth()]} `;
                     }
 
                     html += ++currentDayNumber;
@@ -198,7 +204,9 @@ const Calendar = function Calendar(attributes) {
 
                     if (events[currentDayNumber]) {                        
                         events[currentDayNumber].forEach((event) => {
-                            html += `<span class="event" title="${event.title}">${event.title}</span>`;
+                            if (event.start.getUTCMonth() === currentDate.getUTCMonth()) {
+                                html += `<span class="event" title="${event.title}">${event.title}</span>`;
+                            }
                         });
                     }
                 }
@@ -217,12 +225,15 @@ Calendar.prototype = Object.create(Component.prototype);
 
 Calendar.prototype.render = function() {
     console.log('Calendar.render');
+    const month = this.attributes.start.getUTCMonth();
+    const year = this.attributes.start.getUTCFullYear();
 
     this.html = '';
     this.html += '<header>';
-    this.html += `<h1>${this.attributes.start.getFullYear()}</h1>`;
+    this.html += `<h1>${this.months[month]}, ${year}</h1>`;
     this.html += '<section class="controls">';
     this.html += '<button onClick="calendarApp.getPreviousMonthEvents()">Previous</button>';
+    this.html += '<button onClick="calendarApp.getCurrentMonthEvents()">Today</button>';
     this.html += '<button onClick="calendarApp.getNextMonthEvents()">Next</button>';
     this.html += '</header>';
 

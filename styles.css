@@ -23,8 +23,9 @@ h1 {
 }
 
 button {
-    padding: 5px;
     cursor: pointer;
+    margin: 0 0 0 5px;
+    padding: 5px;
 }
 
 .controls { 

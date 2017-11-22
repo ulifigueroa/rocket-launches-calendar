@@ -1,6 +1,5 @@
-// Note: If we were using a transpiler we could define these modules on different files
-// and later import them by using `import app from "app.js"`.
+# Rocket launches calendar
 
-
-Errors
-I'm not handling errors so I'm just throwing them when happen and catching them on the main app call.
+## Assumptions
+- The user's timezone is UTC, I'm displaying all events in UTC.
+- I'm not doing any sort of error handling, I'm just throwing the errors.
