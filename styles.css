@@ -1,0 +1,59 @@
+#app {
+    margin: 0 auto;
+    width: 768px;
+}
+
+.loading {
+    background-color: blue;
+    color: white;
+    display: block;
+    margin: 0 auto;
+    padding: 0 10px;
+    width: 100px;
+}
+
+h1 { 
+    text-align: center;
+}
+
+.calendar {
+    border-spacing: 0;
+    width: 100%;
+}
+
+.calendar td,
+.calendar th {
+    padding: 10px
+}
+
+.calendar thead th {
+    border-top: 1px solid #ccc;
+    font-weight: bold;
+    text-align: left;
+}
+
+.calendar tbody td {
+    border-top: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+    position: relative;
+    height: 100px;
+    width: 100px;
+}
+
+.calendar tbody .today {
+    background-color: #eee;
+}
+
+.calendar tbody td:last-child {
+    border-right: 1px solid #ccc;
+}
+
+.calendar tbody tr:last-child td {
+    border-bottom: 1px solid #ccc;
+}
+
+.calendar tbody td .number {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+}
