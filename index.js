@@ -90,13 +90,21 @@ const App = function App({ container }) {
     }
 
     this.parseEvents = ({ launches }) => {
-        return launches.map((launch) => {
-            return {
+        let hashedEvents = {};
+
+        launches.forEach((launch) => {
+            let event = {
                 title: launch.name,
-                start: launch.windowstart,
-                end: launch.windowend
-            }
-        })
+                start: new Date(launch.windowstart),
+                end: new Date(launch.windowend)
+            };
+            const eventDay = event.start.getDate();
+
+            hashedEvents[eventDay] = hashedEvents[eventDay] || [];
+            hashedEvents[eventDay].push(event); 
+        });
+
+        return hashedEvents;
     }
 }
 
@@ -106,7 +114,8 @@ App.prototype.render = function() {
     console.log('App.render');
     const { loading } = this.attributes;
 
-    this.container.innerHTML = loading ? '<span class="loading">Loading...</span>' : this.calendar.getHTML();
+    this.container.innerHTML = loading ?
+        '<span class="loading">Loading...</span>' : this.calendar.getHTML();
 }
 
 // ########################################################################
@@ -115,7 +124,8 @@ App.prototype.render = function() {
 const Calendar = function Calendar(attributes) {
     this.html = '';
     this.days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    this.months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    this.months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+                    'August', 'September', 'October', 'November', 'December'];
 
     this.attributes = {
         today: null,
@@ -127,57 +137,63 @@ const Calendar = function Calendar(attributes) {
     this.attributes.today = attributes.today;
     this.attributes.start = attributes.start;
     this.attributes.end = attributes.end;    
+
+    this.renderTitle = function() {
+        let html = '';
+
+        html += '<thead><tr>';
+        this.days.forEach((day) => html += `<th class="title">${day}</th>`);
+        html += '</tr></thead>';
+
+        return html;
+    };
+
+    this.renderEvents = function () {
+        const { events, today } = this.attributes;
+        const currentMonth = today.getMonth();
+        const firstDayOfMonth = new Date(today.getFullYear(), currentMonth, 1);
+        const firstWeekDayOfMonth = firstDayOfMonth.getDay();
+        const lastDayOfMonth = new Date(today.getFullYear(), currentMonth + 1, 0).getDate();
+        let currentDay = 0;
+        let html = '';
+
+        [0, 1, 2, 3, 4].forEach((week) => {
+            html += '<tr>';
+            [0, 1, 2, 3, 4, 5, 6].forEach((weekDay) => {
+                html += `<td class="day ${today.getDate() === currentDay + 1 ? 'today' : ''}">`;
+
+                if (week === 0 && weekDay >= firstWeekDayOfMonth ||
+                    week > 0 && currentDay <= lastDayOfMonth) {
+                    html += `<span class="number ">${++currentDay}</span>`;
+
+                    if (events[currentDay]) {                        
+                        events[currentDay].forEach((event) => {
+                            html += `<span class="event" title="${event.title}">${event.title}</span>`;
+                        });
+                    }
+                }
+
+                html += '</td>';
+            });
+
+            html += '</tr>';
+        });
+
+        return html;
+    };
 }
 
 Calendar.prototype = Object.create(Component.prototype);
 
 Calendar.prototype.render = function() {
     console.log('Calendar.render');
-    const { events, today } = this.attributes;
-    const currentMonth = today.getMonth();
-    const firstDayOfMonth = new Date(today.getFullYear(), currentMonth, 1);
-    const firstWeekDayOfMonth = firstDayOfMonth.getDay();
-    const lastDayOfMonth = new Date(today.getFullYear(), currentMonth + 1, 0).getDate();
-    
-    let currentDay = 0;
+    const currentMonth = this.attributes.today.getMonth();
 
-    if (events.length > 0) {
-
-        this.html = `<h1>${this.months[currentMonth]}</h1>`;
-
-        this.html += '<table class="calendar">';
-
-        this.html += '<thead><tr>';
-        this.days.forEach((day) => this.html += `<th class="title">${day}</th>`);
-        this.html += '</tr></thead>';
-
-        this.html += '<tbody>';
-
-        [0, 1, 2, 3, 4].forEach((week) => {
-            this.html += '<tr>';
-            [0, 1, 2, 3, 4, 5, 6].forEach((weekDay) => {
-                this.html += `<td class="day ${today.getDate() === currentDay + 1 ? 'today' : ''}">`;
-
-                if (week === 0 && weekDay >= firstWeekDayOfMonth ||
-                    week > 0 && currentDay <= lastDayOfMonth) {
-                    this.html += `<span class="number ">${++currentDay}</span>`;
-
-                    // if () {
-                    //     this.html += events.map((event) => { return `<tr><td>${event.title}</td></tr>`; });
-                    // }
-                }
-
-                this.html += '</td>';
-            });
-            this.html += '</tr>';
-        });
-
-        this.html += '</tbody>';
-
-        this.html += '</table>';
-    } else {
-        this.html = 'No events to show';
-    }
+    this.html = `<h1>${this.months[currentMonth]}</h1>`;
+    this.html += '<table class="calendar">';
+    this.html += `<thead>${this.renderTitle()}</thead>`;
+    this.html += `<tbody>${this.renderEvents()}</tbody>`;
+    this.html += '</table>';
 
     return this.html;
 }

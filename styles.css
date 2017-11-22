@@ -17,17 +17,20 @@ h1 {
 }
 
 .calendar {
+    font-size: 12px;
     border-spacing: 0;
     width: 100%;
 }
 
 .calendar td,
 .calendar th {
-    padding: 10px
+    padding: 5px;
+    vertical-align: top;
 }
 
 .calendar thead th {
     border-top: 1px solid #ccc;
+    font-size: 14px;
     font-weight: bold;
     text-align: left;
 }
@@ -53,7 +56,16 @@ h1 {
 }
 
 .calendar tbody td .number {
-    position: absolute;
-    left: 10px;
-    top: 10px;
+    font-size: 14px;
+}
+
+.calendar tbody td .event {
+    background-color: rgb(51, 182, 121);
+    color: #fff;
+    display: inline-block;
+    height: 1.5em;
+    line-height: 1.5em;
+    overflow: hidden;
+    padding: 0 5px;
+    word-break: break-all;
 }
