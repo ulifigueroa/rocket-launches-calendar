@@ -55,8 +55,11 @@ const App = function App({ container }) {
     };
 
     this.init = () => {
+        const currentYear = new Date().getUTCFullYear();
+        const currentMonth = new Date().getUTCMonth();
+
         this.attributes.today = new Date();
-        this.attributes.start = new Date(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)
+        this.attributes.start = new Date(currentYear, currentMonth, 1)
         
         this.container = document.getElementById(container);
         this.calendar = new Calendar();
@@ -148,8 +151,9 @@ App.prototype.render = function() {
 // ########################################################################
 const Calendar = function Calendar() {
     this.html = '';
-    this.days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    this.months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
+    this.days = [0, 1, 2, 3, 4, 5, 6];
+    this.dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    this.monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
                     'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
     this.attributes = {
@@ -162,7 +166,7 @@ const Calendar = function Calendar() {
         let html = '';
 
         html += '<thead><tr>';
-        this.days.forEach((day) => html += `<th class="title">${day}</th>`);
+        this.dayNames.forEach((day) => html += `<th class="title">${day}</th>`);
         html += '</tr></thead>';
 
         return html;
@@ -182,21 +186,24 @@ const Calendar = function Calendar() {
         const lastDayOfMonth = new Date(start.getUTCFullYear(), start.getUTCMonth() + 1, 0).getUTCDate();
         
         let currentDayNumber = 0;
+        let currentWeekNumber = 0;
         let html = '';
 
-        [0, 1, 2, 3, 4].forEach((week) => {
+        
+        while (currentDayNumber < lastDayOfMonth) {
             html += '<tr>';
-            [0, 1, 2, 3, 4, 5, 6].forEach((weekDay) => {
+            
+            this.days.forEach((weekDay) => {
                 let currentDate = new Date(start.getUTCFullYear(), start.getUTCMonth(), currentDayNumber + 1);
 
                 html += `<td class="day ${this.isToday(currentDate) ? 'today' : ''}">`;
 
-                if (week === 0 && weekDay >= firstDayOfMonth.getUTCDay() ||
-                    week > 0 && currentDayNumber < lastDayOfMonth) {
+                if (currentWeekNumber === 0 && weekDay >= firstDayOfMonth.getUTCDay() ||
+                    currentWeekNumber > 0 && currentDayNumber < lastDayOfMonth) {
                     html += '<span class="number ">';
                     
                     if (currentDayNumber === 0) {
-                        html += `${this.months[start.getUTCMonth()]} `;
+                        html += `${this.monthNames[start.getUTCMonth()]} `;
                     }
 
                     html += ++currentDayNumber;
@@ -215,7 +222,9 @@ const Calendar = function Calendar() {
             });
 
             html += '</tr>';
-        });
+
+            currentWeekNumber++;
+        }
 
         return html;
     };
@@ -230,7 +239,7 @@ Calendar.prototype.render = function() {
 
     this.html = '';
     this.html += '<header>';
-    this.html += `<h1>${this.months[month]}, ${year}</h1>`;
+    this.html += `<h1>${this.monthNames[month]}, ${year}</h1>`;
     this.html += '<section class="controls">';
     this.html += '<button onClick="calendarApp.getPreviousMonthEvents()">Previous</button>';
     this.html += '<button onClick="calendarApp.getCurrentMonthEvents()">Today</button>';

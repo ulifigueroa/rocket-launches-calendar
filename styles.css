@@ -1,6 +1,6 @@
 #app {
     margin: 0 auto;
-    width: 768px;
+    width: 90%;
 }
 
 .loading {
@@ -73,7 +73,9 @@ button {
 }
 
 .calendar tbody td .number {
+    display: inline-block;
     font-size: 14px;
+    width: 100%;
 }
 
 .calendar tbody td .event {
