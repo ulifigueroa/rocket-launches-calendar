@@ -1,14 +1,14 @@
 // ########################################################################
 // Load app when document is ready
 // ########################################################################
-let CalendarApp = null;
+let calendarApp = null;
 
 document.onreadystatechange = () => {
     switch (document.readyState) {
         case 'interactive':
             try {
-                CalendarApp = new App({ container: 'app' });
-                CalendarApp.init();
+                calendarApp = new App({ container: 'app' });
+                calendarApp.init();
             } catch (err) {
                 console.error(err);
             }
@@ -140,8 +140,8 @@ App.prototype.render = function() {
 const Calendar = function Calendar(attributes) {
     this.html = '';
     this.days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    this.months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-                    'August', 'September', 'October', 'November', 'December'];
+    this.months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
+                    'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
     this.attributes = {
         today: null,
@@ -174,6 +174,7 @@ const Calendar = function Calendar(attributes) {
         const { events, today, start } = this.attributes;
         const firstDayOfMonth = new Date(start.getFullYear(), start.getMonth(), 1);
         const lastDayOfMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+        
         let currentDayNumber = 0;
         let html = '';
 
@@ -185,8 +186,15 @@ const Calendar = function Calendar(attributes) {
                 html += `<td class="day ${this.isToday(currentDate) ? 'today' : ''}">`;
 
                 if (week === 0 && weekDay >= firstDayOfMonth.getDay() ||
-                    week > 0 && currentDayNumber <= lastDayOfMonth) {
-                    html += `<span class="number ">${++currentDayNumber}</span>`;
+                    week > 0 && currentDayNumber < lastDayOfMonth) {
+                    html += '<span class="number ">';
+                    
+                    if (currentDayNumber === 0) {
+                        html += `${this.months[start.getMonth()]} `;
+                    }
+
+                    html += ++currentDayNumber;
+                    html += '</span>';
 
                     if (events[currentDayNumber]) {                        
                         events[currentDayNumber].forEach((event) => {
@@ -209,15 +217,13 @@ Calendar.prototype = Object.create(Component.prototype);
 
 Calendar.prototype.render = function() {
     console.log('Calendar.render');
-    const month = this.attributes.start.getMonth();
-    const year = this.attributes.start.getFullYear();
 
     this.html = '';
     this.html += '<header>';
-    this.html += `<h1>${this.months[month]}, ${year}</h1>`;
+    this.html += `<h1>${this.attributes.start.getFullYear()}</h1>`;
     this.html += '<section class="controls">';
-    this.html += '<button onClick="CalendarApp.getPreviousMonthEvents()">Previous</button>';
-    this.html += '<button onClick="CalendarApp.getNextMonthEvents()">Next</button>';
+    this.html += '<button onClick="calendarApp.getPreviousMonthEvents()">Previous</button>';
+    this.html += '<button onClick="calendarApp.getNextMonthEvents()">Next</button>';
     this.html += '</header>';
 
     this.html += '<table class="calendar">';

@@ -60,6 +60,7 @@ button {
 
 .calendar tbody .today {
     background-color: #eee;
+    border: 1px solid #000;
 }
 
 .calendar tbody td:last-child {
